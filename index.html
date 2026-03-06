@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Fractales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #1a1a2e;
+            padding: 20px;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            text-align: center;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        select, input[type="number"], input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            background: #0f3460;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background: #0f3460;
+            border: 2px dashed #00d4ff;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background: #00a8cc;
+            transform: translateY(-2px);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+        
+        .info {
+            margin-top: 15px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .json-display {
+            margin-top: 15px;
+            padding: 10px;
+            background: #0f0f0f;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 150px;
+            overflow-y: auto;
+            color: #0f0;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: #00d4ff;
+            display: none;
+        }
+        
+        .palette-fire { background: linear-gradient(to right, #000, #f00, #ff0, #fff); }
+        .palette-ocean { background: linear-gradient(to right, #000, #00f, #0ff, #fff); }
+        .palette-forest { background: linear-gradient(to right, #000, #0f0, #0a0); }
+        .palette-psychedelic { background: linear-gradient(to right, #f0f, #0ff, #ff0, #f0f); }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🌀 Fractal Visualizer</h1>
+        
+        <div class="control-group">
+            <label>Cargar configuración JSON:</label>
+            <input type="file" id="jsonFile" accept=".json">
+        </div>
+        
+        <div class="control-group">
+            <label>Tipo de Fractal:</label>
+            <select id="fractalType">
+                <option value="mandelbrot">Mandelbrot Set</option>
+                <option value="julia">Julia Set</option>
+                <option value="sierpinski">Sierpinski Triangle</option>
+                <option value="koch">Koch Snowflake</option>
+                <option value="burningShip">Burning Ship</option>
+            </select>
+            
+            <label>Ancho:</label>
+            <input type="number" id="width" value="800" min="400" max="1920" step="100">
+            
+            <label>Alto:</label>
+            <input type="number" id="height" value="600" min="400" max="1080" step="100">
+            
+            <label>Iteraciones máximas:</label>
+            <input type="range" id="iterations" min="50" max="1000" value="100">
+            <span id="iterValue">100</span>
+            
+            <label>Zoom:</label>
+            <input type="range" id="zoom" min="0.1" max="10" step="0.1" value="1">
+            <span id="zoomValue">1.0</span>
+            
+            <label>Offset X:</label>
+            <input type="number" id="offsetX" value="0" step="0.1">
+            
+            <label>Offset Y:</label>
+            <input type="number" id="offsetY" value="0" step="0.1">
+            
+            <label>Paleta de colores:</label>
+            <select id="palette">
+                <option value="fire">Fuego 🔥</option>
+                <option value="ocean">Océano 🌊</option>
+                <option value="forest">Bosque 🌲</option>
+                <option value="psychedelic">Psicodélico 🌈</option>
+                <option value="grayscale">Escala de grises</option>
+            </select>
+        </div>
+        
+        <button onclick="generateFractal()">🎨 Generar Fractal</button>
+        <button onclick="downloadJSON()">💾 Descargar JSON</button>
+        <button onclick="resetView()">🔄 Resetear Vista</button>
+        
+        <div class="json-display" id="jsonDisplay">
+            // Configuración actual aparecerá aquí
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <canvas id="fractalCanvas"></canvas>
+        <div class="info">
+            Haz clic y arrastra para mover | Rueda del ratón para zoom
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">Generando...</div>
+
+    <script>
+        const canvas = document.getElementById('fractalCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentConfig = {};
+        
+        // Actualizar valores mostrados
+        document.getElementById('iterations').addEventListener('input', (e) => {
+            document.getElementById('iterValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('zoom').addEventListener('input', (e) => {
+            document.getElementById('zoomValue').textContent = e.target.value;
+        });
+        
+        // Cargar JSON
+        document.getElementById('jsonFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const config = JSON.parse(event.target.result);
+                        loadConfig(config);
+                    } catch (err) {
+                        alert('Error al cargar JSON: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        function loadConfig(config) {
+            document.getElementById('fractalType').value = config.fractal_type || 'mandelbrot';
+            document.getElementById('width').value = config.width || 800;
+            document.getElementById('height').value = config.height || 600;
+            document.getElementById('iterations').value = config.max_iterations || 100;
+            document.getElementById('zoom').value = config.zoom || 1;
+            document.getElementById('offsetX').value = config.offset_x || 0;
+            document.getElementById('offsetY').value = config.offset_y || 0;
+            document.getElementById('palette').value = config.color_palette || 'fire';
+            
+            // Actualizar displays
+            document.getElementById('iterValue').textContent = config.max_iterations || 100;
+            document.getElementById('zoomValue').textContent = config.zoom || 1;
+            
+            updateJSONDisplay();
+            generateFractal();
+        }
+        
+        function getConfig() {
+            return {
+                fractal_type: document.getElementById('fractalType').value,
+                width: parseInt(document.getElementById('width').value),
+                height: parseInt(document.getElementById('height').value),
+                max_iterations: parseInt(document.getElementById('iterations').value),
+                zoom: parseFloat(document.getElementById('zoom').value),
+                offset_x: parseFloat(document.getElementById('offsetX').value),
+                offset_y: parseFloat(document.getElementById('offsetY').value),
+                color_palette: document.getElementById('palette').value,
+                colors: {
+                    background: [10, 10, 30]
+                }
+            };
+        }
+        
+        function updateJSONDisplay() {
+            currentConfig = getConfig();
+            document.getElementById('jsonDisplay').textContent = JSON.stringify(currentConfig, null, 2);
+        }
+        
